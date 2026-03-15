@@ -7,24 +7,28 @@ from sklearn.ensemble import RandomForestRegressor
 
 st.title("UAC Care Load Forecast Dashboard")
 
-# show files in repo
-st.write("Files inside repository:")
-st.write(os.listdir())
-
 file_name = "HHS_Unaccompanied_Alien_Children_Program.csv"
 
-if file_name not in os.listdir():
-    st.error("Dataset file not found in GitHub repository.")
+# Check dataset
+if not os.path.exists(file_name):
+    st.error("Dataset file not found in repository.")
 else:
 
     data = pd.read_csv(file_name)
 
-    st.subheader("Dataset Preview")
+    st.subheader("Original Dataset Preview")
     st.write(data.head())
 
+    # Convert Date column
     data["Date"] = pd.to_datetime(data["Date"])
+
+    # Sort by date
     data = data.sort_values("Date")
 
+    # Remove rows with missing values
+    data = data.dropna()
+
+    # Create numeric index
     data["Day_Index"] = np.arange(len(data))
 
     target = "Children in HHS Care"
@@ -32,6 +36,7 @@ else:
     X = data[["Day_Index"]]
     y = data[target]
 
+    # Train model
     model = RandomForestRegressor(n_estimators=100)
     model.fit(X, y)
 
@@ -50,6 +55,7 @@ else:
 
     st.write(forecast_df)
 
+    # Plot
     fig, ax = plt.subplots()
 
     ax.plot(data["Day_Index"], y, label="Historical Data")
@@ -57,7 +63,6 @@ else:
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Children in HHS Care")
-
     ax.legend()
 
     st.pyplot(fig)
