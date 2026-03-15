@@ -1,67 +1,63 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 
-st.title("UAC Care Load Forecasting Dashboard")
+st.title("UAC Care Load Forecast Dashboard")
 
-st.write("Forecasting future children care load using Machine Learning")
+# show files in repo
+st.write("Files inside repository:")
+st.write(os.listdir())
 
-# Load the uploaded dataset
-data = pd.read_csv("HHS_Unaccompanied_Alien_Children_Program.csv")
+file_name = "HHS_Unaccompanied_Alien_Children_Program.csv"
 
-# Convert date column
-data["Date"] = pd.to_datetime(data["Date"])
+if file_name not in os.listdir():
+    st.error("Dataset file not found in GitHub repository.")
+else:
 
-# Sort by date
-data = data.sort_values("Date")
+    data = pd.read_csv(file_name)
 
-st.subheader("Dataset Preview")
-st.dataframe(data)
+    st.subheader("Dataset Preview")
+    st.write(data.head())
 
-# Select the target column
-target_column = "Children in HHS Care"
+    data["Date"] = pd.to_datetime(data["Date"])
+    data = data.sort_values("Date")
 
-# Feature Engineering
-data["Day_Index"] = np.arange(len(data))
+    data["Day_Index"] = np.arange(len(data))
 
-X = data[["Day_Index"]]
-y = data[target_column]
+    target = "Children in HHS Care"
 
-# Train Machine Learning Model
-model = RandomForestRegressor(n_estimators=100)
-model.fit(X, y)
+    X = data[["Day_Index"]]
+    y = data[target]
 
-# Forecast Horizon
-st.sidebar.header("Forecast Settings")
-days = st.sidebar.slider("Select Forecast Days", 1, 30, 7)
+    model = RandomForestRegressor(n_estimators=100)
+    model.fit(X, y)
 
-future_days = np.arange(len(data), len(data) + days).reshape(-1,1)
+    days = st.slider("Forecast Days", 1, 30, 7)
 
-forecast = model.predict(future_days)
+    future = np.arange(len(data), len(data)+days).reshape(-1,1)
 
-st.subheader("Forecast Results")
+    forecast = model.predict(future)
 
-forecast_df = pd.DataFrame({
-    "Day": range(1, days + 1),
-    "Predicted Children in HHS Care": forecast
-})
+    st.subheader("Forecast Results")
 
-st.write(forecast_df)
+    forecast_df = pd.DataFrame({
+        "Day": range(1, days+1),
+        "Predicted Care Load": forecast
+    })
 
-# Visualization
-fig, ax = plt.subplots()
+    st.write(forecast_df)
 
-ax.plot(data["Day_Index"], y, label="Historical Data")
-ax.plot(range(len(data), len(data) + days), forecast, label="Forecast")
+    fig, ax = plt.subplots()
 
-ax.set_xlabel("Time")
-ax.set_ylabel("Children in HHS Care")
-ax.set_title("Future Care Load Forecast")
+    ax.plot(data["Day_Index"], y, label="Historical Data")
+    ax.plot(range(len(data), len(data)+days), forecast, label="Forecast")
 
-ax.legend()
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Children in HHS Care")
 
-st.pyplot(fig)
+    ax.legend()
 
-st.success("Forecast generated successfully using Random Forest Model")
+    st.pyplot(fig)
